@@ -6,7 +6,6 @@ from NeuralNetworks.cupy_NeuralNetworks.Layer import Dense, LSTM, RNN, ModernLST
 from NeuralNetworks.cupy_NeuralNetworks.Activation import Sigmoid, Tanh, Softmax, Linear
 from NeuralNetworks.cupy_NeuralNetworks.Loss import CrossEntropy
 from NeuralNetworks.cupy_NeuralNetworks.Optimizer import GradientDescent, Momentum
-from .data_preprocessing import DataPreprocessing
 from NeuralNetworks.Tokenizer import Tokenizer
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -30,31 +29,36 @@ def create_subsample(X, classes, size):
   return subsample
 
 def main():
-  df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
-  df = df.dropna(axis=0)
+  # df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
+  # df = df.dropna(axis=0)
 
-  sub_sample = create_subsample(df, [0,1,2], 30000)
+  # sub_sample = create_subsample(df, [0,1,2], 30000)
 
-
-  tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
-  tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
+  # tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
+  # tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
     
-  token_dataset = []
-  for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
+  # token_dataset = []
+  # for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
 
   # label_encoder = LabelEncoder()
   # encoded_label = label_encoder.fit_transform(df['status'].values)
 
-  train_dataset, test_dataset, train_label, test_label = train_test_split(token_dataset, sub_sample['status'], test_size=0.4, random_state=42)
+  token_data = cp.load('lstm_restaurant_review/data/X.npy')
+  status_class = cp.load('lstm_restaurant_review/data/Y.npy')
+
+  train_dataset, test_dataset, train_label, test_label = train_test_split(token_data, status_class, test_size=0.4, random_state=42)
   test_dataset, val_dataset, test_label, val_label = train_test_split(test_dataset, test_label, test_size=0.5, random_state=42)
 
-  train_label = cp.eye(3)[train_label.to_numpy().astype(int)]
-  test_label = cp.eye(3)[test_label.to_numpy().astype(int)]
-  val_label = cp.eye(3)[val_label.to_numpy().astype(int)]
+  train_label = cp.eye(3)[train_label.astype(cp.int8)]
+  test_label = cp.eye(3)[test_label.astype(cp.int8)]
+  val_label = cp.eye(3)[val_label.astype(cp.int8)]
+
+
+  max_length = train_dataset.shape[1]
 
   model = Sequential([
-    Embedding(output_shape=300, input_shape=2756, activation=Linear(), max_lenght=350, embedded=True),
-    LSTM(output_shape=32, input_shape=(350, 300), activation=Tanh(), recurrent_activation=Sigmoid(), return_sequences=False, bias_initialize=False, truncated_step=350)
+    Embedding(output_shape=300, input_shape=2756, activation=Linear(), max_length=max_length, embedded=True, padding=False),
+    LSTM(output_shape=32, input_shape=(350, 300), activation=Tanh(), recurrent_activation=Sigmoid(), return_sequences=False, bias_initialize=False, truncated_step=max_length)
   ])
   model.add(Dense(output_shape=3, activation=Softmax()))
     

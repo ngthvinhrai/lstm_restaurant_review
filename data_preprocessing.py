@@ -1,86 +1,46 @@
+from NeuralNetworks.Tokenizer import Tokenizer
 import pandas as pd
 import numpy as np
+import cupy as cp
 import re
 
-class Tokenizer:
-    def __init__(self, num_words, max_length, filter='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n', lower=True, oov_token=None):
-        self.num_words = num_words
-        self.max_lenght = max_length
-        self.filter = filter
-        self.lower = lower
-        self.oov_token = oov_token
-        self.word_counts = {}
-        self.word_index = {}
+def create_subsample(X, classes, size):
+    size_per_class = size // len(classes)
+    subsample = pd.DataFrame(columns=X.columns)
 
-    def fit(self, dataset):
-        for text in dataset:
-            for word in text.split():
-                if word not in self.word_counts: self.word_counts[word] = 1
-                else: self.word_counts[word] += 1 
-                    
-        wcounts = list(self.word_counts.items())
-        wcounts.sort(key=lambda x: x[1], reverse=True)
+    for c in classes:
+        shuffle_sample = X[X['status'] == c].sample(frac=1, random_state=42)
+        subsample = pd.concat([subsample, shuffle_sample[:size_per_class]])
 
-        if self.oov_token is None: sorted_wcounts = []
-        else: sorted_wcounts = [self.oov_token]
-        sorted_wcounts.extend(wc[0] for wc in wcounts)
+    return subsample
 
-        self.word_index = dict(zip(sorted_wcounts, range(1, len(sorted_wcounts)+1)))
+def padding(X, max_length):
+    if max_length < 256: b = cp.int8
+    elif max_length < 65536: b = cp.int16
+    new_X = cp.zeros((len(X), max_length), dtype=b)
 
-    def texts_to_sequences(self, dataset, padding=False):
-        ttsq = []
-
-        for text in dataset:
-            lenght = len(text.split())
-            seq = []
-            if padding == True:
-                if lenght < self.max_lenght:
-                    seq.extend([0 for _ in range(self.max_lenght - lenght)])
-            
-            for word in text.split():
-                pos = self.word_index[word]
-                if pos > self.num_words:
-                    if self.oov_token is not None: seq.append(self.word_index[self.oov_token])
-                else: seq.append(pos)
-            ttsq.append(seq)
-
-        return ttsq 
-
-    def save_word_index(self, path):
-        with open(path, 'w', encoding="utf-8") as file:
-            for word, index in self.word_index.items():
-                file.write(word + " " + str(index) + "\n")
+    for x, newx in zip(X, new_X):
+        newx[(max_length-len(x)):] = cp.array([x], dtype=b)
     
-    def load_word_index(self, path):
-        with open(path, 'r', encoding="utf-8") as file:
-            for line in file:
-                text = line.strip().split()
-                self.word_index[text[0]] = int(text[1])
-
-class DataPreprocessing:
-    def __init__(self, data):
-        self.data = data
-
-    def one_hot_processing(self):
-        Y = self.data['Label'].to_numpy()
-        Y = np.eye(3)[Y]
-
-        X = self.data.drop('Label', axis=1).to_numpy()
-        X = np.eye(np.max(X)+1)[X]
-
-        return X, Y
-    
-    def binary_processing(self):
-        Y = self.data['Label'].to_numpy()
-        Y = np.eye(3)[Y]
-
-        X = np.array([[[int(bit) for bit in format(num, '07b')] for num in row] for row in self.data.drop('Label', axis=1).to_numpy()])
-        
-        return X, Y
+    return new_X
 
 if __name__ == '__main__':
-    df = pd.read_csv('test_model/data/IMDB_Dataset.csv')
+    df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
+    df = df.dropna(axis=0)
 
-    tokenizer = Tokenizer(num_words=5000, max_length=812)
-    tokenizer.fit(df['review'].head())
-    print(tokenizer.texts_to_sequences(df['review'].head(), padding=True))
+    sub_sample = create_subsample(df, [0,1,2], 30000)
+
+    tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
+    tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
+    
+    token_dataset = []
+    for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
+
+    max_length = 350
+
+    token_dataset = padding(token_dataset, 350)
+
+    numpy_class = df['status'].to_numpy(dtype=cp.int8)
+
+    cp.save('lstm_restaurant_review/data/X.npy', token_dataset)
+    cp.save('lstm_restaurant_review/data/Y.npy', numpy_class)
