@@ -29,20 +29,6 @@ def create_subsample(X, classes, size):
   return subsample
 
 def main():
-  # df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
-  # df = df.dropna(axis=0)
-
-  # sub_sample = create_subsample(df, [0,1,2], 30000)
-
-  # tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
-  # tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
-    
-  # token_dataset = []
-  # for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
-
-  # label_encoder = LabelEncoder()
-  # encoded_label = label_encoder.fit_transform(df['status'].values)
-
   token_data = cp.load('lstm_restaurant_review/data/X.npy')
   status_class = cp.load('lstm_restaurant_review/data/Y.npy')
 
@@ -52,7 +38,6 @@ def main():
   train_label = cp.eye(3)[train_label.astype(cp.int8)]
   test_label = cp.eye(3)[test_label.astype(cp.int8)]
   val_label = cp.eye(3)[val_label.astype(cp.int8)]
-
 
   max_length = train_dataset.shape[1]
 
