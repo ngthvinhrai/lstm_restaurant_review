@@ -30,14 +30,14 @@ def create_subsample(X, classes, size):
   return subsample
 
 def main():
-  df = pd.read_csv('text_classification/data/restaurant_review.csv')
+  df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
   df = df.dropna(axis=0)
 
   sub_sample = create_subsample(df, [0,1,2], 30000)
 
 
   tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
-  tokenizer.load('text_classification/weights_and_biases/Tokenizer/merge.txt', 'text_classification/weights_and_biases/Tokenizer/vocab.txt')
+  tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
     
   token_dataset = []
   for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
@@ -60,7 +60,7 @@ def main():
     
   model.compile(loss=CrossEntropy(), optimizer=GradientDescent())
   his = model.fit(train_dataset, train_label, batch_size=32, epochs=5, lr=0.1)
-  model.save_weights('text_classification/weights_and_biases')
+  model.save_weights('lstm_restaurant_review/weights_and_biases')
 
 if __name__ == '__main__':
   main()
