@@ -42,13 +42,13 @@ def main():
   max_length = train_dataset.shape[1]
 
   model = Sequential([
-    Embedding(output_shape=300, input_shape=2756, activation=Linear(), max_length=max_length, embedded=True, padding=False),
-    LSTM(output_shape=32, input_shape=(350, 300), activation=Tanh(), recurrent_activation=Sigmoid(), return_sequences=False, bias_initialize=False, truncated_step=max_length)
+    Embedding(output_shape=300, input_shape=2757, activation=Linear(), max_length=max_length, embedded=True, padding=False, trainable=True),
+    ModernLSTM(output_shape=32, input_shape=(350, 300), activation=Tanh(), recurrent_activation=Sigmoid(), return_sequences=False, bias_initialize=True, truncated_step=max_length)
   ])
   model.add(Dense(output_shape=3, activation=Softmax()))
     
   model.compile(loss=CrossEntropy(), optimizer=GradientDescent())
-  his = model.fit(train_dataset, train_label, batch_size=32, epochs=5, lr=0.1)
+  his = model.fit(train_dataset[:32], train_label[:32], val_data=(val_dataset, val_label), batch_size=32, epochs=20, lr=0.5)
   model.save_weights('lstm_restaurant_review/weights_and_biases')
 
 if __name__ == '__main__':

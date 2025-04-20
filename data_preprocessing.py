@@ -14,10 +14,10 @@ def create_subsample(X, classes, size):
 
     return subsample
 
-def padding(X, max_length):
-    if max_length < 256: b = cp.int8
-    elif max_length < 65536: b = cp.int16
-    new_X = cp.zeros((len(X), max_length), dtype=b)
+def padding(X, max_length, value):
+    if value < 256: b = cp.int8
+    elif value < 65536: b = cp.int16
+    new_X = cp.zeros((len(X), max_length), dtype=b) + value
 
     for x, newx in zip(X, new_X):
         newx[(max_length-len(x)):] = cp.array([x], dtype=b)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     max_length = 350
 
-    token_dataset = padding(token_dataset, 350)
+    token_dataset = padding(token_dataset, 350, tokenizer.num_merges+255+1)
 
     numpy_class = df['status'].to_numpy(dtype=cp.int8)
 
