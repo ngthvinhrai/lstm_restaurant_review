@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     # sub_sample = create_subsample(df, [0,1,2], 30000)
 
-    tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
+    tokenizer = Tokenizer(num_merges=2500)
     tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
 
     encode_data = tokenizer.encode(df['text'].iloc[0])
