@@ -48,7 +48,7 @@ def main():
   model.add(Dense(output_shape=3, activation=Softmax()))
     
   model.compile(loss=CrossEntropy(), optimizer=GradientDescent())
-  his = model.fit(train_dataset[:32], train_label[:32], val_data=(val_dataset, val_label), batch_size=32, epochs=20, lr=0.5)
+  his = model.fit(train_dataset, train_label, val_data=(val_dataset, val_label), batch_size=64, epochs=40, lr=0.4)
   model.save_weights('lstm_restaurant_review/weights_and_biases')
 
 if __name__ == '__main__':

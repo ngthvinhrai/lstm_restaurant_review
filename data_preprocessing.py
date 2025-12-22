@@ -1,7 +1,6 @@
 from NeuralNetworks.Tokenizer import Tokenizer
 import pandas as pd
 import numpy as np
-import cupy as cp
 import re
 
 def create_subsample(X, classes, size):
@@ -15,12 +14,12 @@ def create_subsample(X, classes, size):
     return subsample
 
 def padding(X, max_length, value):
-    if value < 256: b = cp.int8
-    elif value < 65536: b = cp.int16
-    new_X = cp.zeros((len(X), max_length), dtype=b) + value
+    if value < 256: b = np.int8
+    elif value < 65536: b = np.int16
+    new_X = np.zeros((len(X), max_length), dtype=b) + value
 
     for x, newx in zip(X, new_X):
-        newx[(max_length-len(x)):] = cp.array([x], dtype=b)
+        newx[(max_length-len(x)):] = np.array([x], dtype=b)
     
     return new_X
 
@@ -28,19 +27,22 @@ if __name__ == '__main__':
     df = pd.read_csv('lstm_restaurant_review/data/restaurant_review.csv')
     df = df.dropna(axis=0)
 
-    sub_sample = create_subsample(df, [0,1,2], 30000)
+    # sub_sample = create_subsample(df, [0,1,2], 30000)
 
     tokenizer = Tokenizer(num_merges=2500, oov_token='<UNK>')
     tokenizer.load('lstm_restaurant_review/weights_and_biases/Tokenizer/merge.txt', 'lstm_restaurant_review/weights_and_biases/Tokenizer/vocab.txt')
+
+    encode_data = tokenizer.encode(df['text'].iloc[0])
+    print([tokenizer.word_decode[t] for t in encode_data])
     
-    token_dataset = []
-    for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
+    # token_dataset = []
+    # for text in sub_sample['text']: token_dataset.append(tokenizer.encode(text))
 
-    max_length = 350
+    # max_length = 350
 
-    token_dataset = padding(token_dataset, 350, tokenizer.num_merges+255+1)
+    # token_dataset = padding(token_dataset, 350, tokenizer.num_merges+255+1)
 
-    numpy_class = df['status'].to_numpy(dtype=cp.int8)
+    # numpy_class = df['status'].to_numpy(dtype=np.int8)
 
-    cp.save('lstm_restaurant_review/data/X.npy', token_dataset)
-    cp.save('lstm_restaurant_review/data/Y.npy', numpy_class)
+    # np.save('lstm_restaurant_review/data/X.npy', token_dataset)
+    # np.save('lstm_restaurant_review/data/Y.npy', numpy_class)
